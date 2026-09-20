@@ -7,13 +7,14 @@ async function enter(page: any, pin: string) { await page.goto('/gate/'); await 
 test('dois PINs, dois usuários: cada um vê só os seus documentos e os compartilhados', async ({ page }) => {
   await enter(page, PIN2);
   await page.fill('.search', 'incorporação'); await expect(page.locator('li a', { hasText: 'incorporação imobiliária' })).toHaveCount(1);
-  await expect(page.locator('.bar button[aria-label="Ver todos"]')).toHaveCount(0); // para ela não há documentos escondidos
+  await expect(page.locator('.bar button[aria-label="Ver todos"]')).toHaveCount(1); // ela também pode revelar a biblioteca (menos categorias privadas)
   await page.evaluate(() => { localStorage.clear(); document.cookie = 'atlas_token=; Path=/; Max-Age=0'; });
   await enter(page, PIN);
   await page.fill('.search', 'incorporação'); await expect(page.locator('li a', { hasText: 'incorporação imobiliária' })).toHaveCount(0);
-  // "ver todos" mostra os dela também
+  // "ver todos" mostra os dela também, mas nunca a categoria privada
   await page.locator('.bar button[aria-label="Ver todos"]').click();
   await expect(page.locator('li a', { hasText: 'incorporação imobiliária' })).toHaveCount(1);
+  await page.fill('.search', 'resume'); await expect(page.locator('li a', { hasText: 'Resume Parser' })).toHaveCount(1); // lucas vê trackfive (é dele)
 });
 
 test('estado pessoal não vaza: marcar como lido para um usuário não marca para o outro', async ({ page }) => {
