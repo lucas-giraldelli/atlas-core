@@ -418,7 +418,7 @@
   .prog { color: var(--amber); } .prog.full { color: var(--green); }
   .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; margin: 26px 0 40px; }
   .bar :global(.search) { flex: 1 1 100%; margin: 0; }
-  @media (min-width: 641px) { .bar :global(.search) { flex: 1 1 auto; } }
+  @media (min-width: 641px) { .bar :global(.search) { flex: 1 1 auto; } .bar :global(.ask), .toggle { height: 46px; width: 50px; flex: 0 0 auto; } }
   @media (max-width: 640px) { .bar :global(.ask), .toggle { width: 40px; height: 40px; flex: 0 0 auto; } .bar :global(.ask svg), .toggle > :global(svg) { width: 16px; height: 16px; } .count { top: -5px; right: -5px; min-width: 16px; height: 16px; font-size: 10px; line-height: 16px; } }
   .toggle { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 50px; color: var(--ink-2); background: var(--surface); border: 1px solid var(--rule-2); border-radius: 3px; cursor: pointer; }
   .count { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; font-family: var(--mono); font-size: 11px; line-height: 18px; color: var(--bg); background: var(--amber); }

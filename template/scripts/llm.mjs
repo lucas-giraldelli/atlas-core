@@ -29,6 +29,7 @@ export async function complete(prompt, opts = {}) {
   }
   throw last;
 }
+const TIMEOUT = 5 * 60 * 1000; // uma resposta longa leva minutos; sem limite, um socket morto trava o worker
 async function completeOnce(prompt, { json = false, maxTokens = 16000, temperature = 0.3, cfg = llmConfig() } = {}) {
   const { provider, key, model, base } = cfg;
   if (!key && provider !== 'ollama') throw new Error('LLM_KEY não configurada');
@@ -36,14 +37,14 @@ async function completeOnce(prompt, { json = false, maxTokens = 16000, temperatu
   let text;
   if (provider === 'gemini') {
     const r = await fetch(`${base || 'https://generativelanguage.googleapis.com'}/v1beta/models/${model}:generateContent?key=${key}`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST', signal: AbortSignal.timeout(TIMEOUT), headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature, maxOutputTokens: maxTokens, ...(json ? { responseMimeType: 'application/json' } : {}) } })
     });
     if (!r.ok) throw new Error(`gemini ${r.status}: ${(await r.text()).slice(0, 300)}`);
     text = (await r.json()).candidates?.[0]?.content?.parts?.map((p) => p.text).join('') ?? '';
   } else if (provider === 'anthropic') {
     const r = await fetch(`${base || 'https://api.anthropic.com'}/v1/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      method: 'POST', signal: AbortSignal.timeout(TIMEOUT), headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({ model, max_tokens: maxTokens, temperature, messages: [{ role: 'user', content: prompt + jsonHint }] })
     });
     if (!r.ok) throw new Error(`anthropic ${r.status}: ${(await r.text()).slice(0, 300)}`);
@@ -51,7 +52,7 @@ async function completeOnce(prompt, { json = false, maxTokens = 16000, temperatu
   } else { // openai e compatíveis (ollama expõe /v1)
     const url = `${base || (provider === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1')}/chat/completions`;
     const r = await fetch(url, {
-      method: 'POST', headers: { 'content-type': 'application/json', ...(key ? { authorization: `Bearer ${key}` } : {}) },
+      method: 'POST', signal: AbortSignal.timeout(TIMEOUT), headers: { 'content-type': 'application/json', ...(key ? { authorization: `Bearer ${key}` } : {}) },
       body: JSON.stringify({ model, temperature, max_tokens: maxTokens, messages: [{ role: 'user', content: prompt + jsonHint }], ...(json ? { response_format: { type: 'json_object' } } : {}) })
     });
     if (!r.ok) throw new Error(`${provider} ${r.status}: ${(await r.text()).slice(0, 300)}`);

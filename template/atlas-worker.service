@@ -7,7 +7,7 @@ After=network-online.target docker.service
 [Service]
 WorkingDirectory=/path/to/your-atlas
 ExecStart=/usr/bin/node /path/to/your-atlas/scripts/worker.mjs
-Restart=on-failure
+Restart=always
 RestartSec=15
 Environment=PATH=%h/.local/share/pnpm:/usr/local/bin:/usr/bin:/bin
 

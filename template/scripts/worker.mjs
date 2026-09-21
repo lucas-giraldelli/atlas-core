@@ -274,6 +274,17 @@ async function tick() {
     await handle(r);
   }
 }
+// Cão de guarda: um pedido não pode levar mais que TICK_MAX. Se levar (Chromium ou fetch que nunca
+// respondem), o processo sai e o systemd o reinicia; o pedido que estava "running" volta para a fila.
+const TICK_MAX = 15 * 60 * 1000;
+async function guarded() {
+  let timer; const bomb = new Promise((_, rej) => { timer = setTimeout(() => rej(new Error('tick travou por mais de 15 min')), TICK_MAX); });
+  try { await Promise.race([tick(), bomb]); }
+  catch (e) { console.error(new Date().toISOString(), 'tick', e.message); if (/travou/.test(e.message)) process.exit(1); }
+  finally { clearTimeout(timer); }
+}
+// pedidos que ficaram "running" de um processo anterior (queda, reinício) voltam para a fila
+for (const r of await pb.collection('requests').getFullList({ filter: 'status = "running"' })) await pb.collection('requests').update(r.id, { status: 'pending' });
 if (process.argv.includes('--once')) { await tick(); process.exit(0); }
 console.log('atlas worker: ouvindo', PB_URL, 'llm', LLM.provider, LLM.model);
-for (;;) { try { await tick(); } catch (e) { console.error('tick', e.message); } await new Promise((r) => setTimeout(r, 30000)); }
+for (;;) { await guarded(); await new Promise((r) => setTimeout(r, 30000)); }
